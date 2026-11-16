@@ -1,0 +1,103 @@
+#################################################################
+# Modern Artillery（现代信息化炮兵）— 隐藏科技（单级）v3
+# 2026-11-09
+#
+# 授予方式：事件 9900001 / 9900002 的 option 写
+#   set_country_flag = modern_artillery_buff_granted
+#   modern_artillery_tech = 5000
+#
+# v3 显示方案（科技数值与 v2 完全相同，只换显示通道）：
+#   - v2 的假触发修正 modern_artillery_buff 已删除（它显示的 4 条修正
+#     与实际 buff 不符，不再出现在右下角「战略效果」窗口）；
+#   - 真实数值改为两处显示：
+#       ① 事件 9900003 的 desc（紧凑分类明细，随授予事件自动弹出）；
+#       ② 被动决议 modern_artillery_buff_info 的 desc（完整逐类 delta/final
+#          明细，在「外交界面→决议」列表悬停决议名查看）。
+#   - 上述显示文本统一由 scripts\artillery\gen_buff_localisation.py 从本文件
+#     的增量 + tfh\units\<兵种>.txt 的单位基线计算生成；
+#     本文件是唯一数值来源，禁止手改 localisation\zz_modern_artillery.csv 里的数字。
+#
+# 关键事实（v1 失败原因）：事件效果 <科技名> = N 不是"直接给等级"，而是跑一次
+#   AdvanceResearch(leadership = N×1000 千分位)：进度 += N × 效率 / 研究成本。
+#   N=1 时研究成本约 137.5 ⇒ 只加约 0.7% 进度，科技永不升级 ⇒ v1 buff 从未生效。
+#   N=5000（≈36 倍成本）一次推进必然升 1 级；单级科技(additional_offset=0)余量清零，
+#   一次调用最多 +1 级，不会溢出多级。
+#
+# change = no：把本科技按"学说"处理。已有炮兵旅在每日升级/整备阶段免费 1 天 1 级追平
+#   国家等级（不花 IC、不占生产、不进升级队列）；否则要按 100 天/级、半价/天 的装备
+#   升级流程慢慢爬。
+#
+# 数值口径：技术 effect 为「绝对值加法」，引擎按 等级 × 数值 累加到兵种基线。
+#   本科技 max_level = 1，故下列数值即最终增量。注释里写的是 基线 → 目标。
+#
+# 调平衡（G7）：只改本文件的 ground_defence_effiency 即可：
+#   22 = 现行档（有效命中 30% → 8%，战斗内损失 ≈ ×0.267）
+#   20 = 回调档（30% → 10%，损失 ≈ ×0.333）
+#   18 = 保守档（30% → 12%，损失 ≈ ×0.400）
+#   改完记得重跑 scripts\artillery\gen_buff_localisation.py 更新显示文本。
+#################################################################
+
+modern_artillery_tech = {
+	# ===== 牵引炮兵 =====
+	artillery_brigade = {
+		soft_attack = 21.60			# 2.40 → 24.00（×10）
+		hard_attack = 3.00			# 1.00 → 4.00（×4）
+		ap_attack = 20				# 0 → 20（原版最高 armor_value = 13，全穿甲）
+		defensiveness = 18.33		# 1.67 → 20.00
+		toughness = 14.00			# 1.00 → 15.00（师级聚合双计，实际收益更大）
+		softness = -0.55			# 0.90 → 0.35
+		default_morale = 0.15		# 0.30 → 0.45（组织度回复速度）
+	}
+
+	# ===== 自行火炮（机械化：+5 km/h）=====
+	sp_artillery_brigade = {
+		soft_attack = 24.03			# 2.67 → 26.70（×10）
+		hard_attack = 4.00			# 1.33 → 5.33（×4）
+		ap_attack = 20
+		defensiveness = 17.00		# 3.00 → 20.00
+		toughness = 12.00			# 3.00 → 15.00
+		softness = -0.35			# 0.70 → 0.35
+		default_morale = 0.15
+		maximum_speed = 5.00		# 7.00 → 12.00
+	}
+
+	# ===== 火箭炮 =====
+	rocket_artillery_brigade = {
+		soft_attack = 24.03			# 2.67 → 26.70（×10）
+		hard_attack = 3.00			# 1.00 → 4.00（×4）
+		ap_attack = 20
+		defensiveness = 18.50		# 1.50 → 20.00
+		toughness = 13.33			# 1.67 → 15.00
+		softness = -0.55			# 0.90 → 0.35
+		default_morale = 0.15
+	}
+
+	# ===== 自行火箭炮（机械化：+5 km/h）=====
+	sp_rct_artillery_brigade = {
+		soft_attack = 27.00			# 3.00 → 30.00（×10）
+		hard_attack = 3.00			# 1.00 → 4.00（×4）
+		ap_attack = 20
+		defensiveness = 17.67		# 2.33 → 20.00
+		toughness = 12.00			# 3.00 → 15.00
+		softness = -0.35			# 0.70 → 0.35
+		default_morale = 0.15
+		maximum_speed = 5.00		# 8.00 → 13.00
+	}
+
+	# ===== 全国陆军（设定：炮兵主导战场 → 其它兵种配合调整、全军伤亡下降）=====
+	# GDE：防御槽未耗尽时，被有效命中率 30% → 8%（损失 ×0.267）
+	ground_defence_effiency = 22
+	# 整备：攻击后移动锁定 168h → 120h（引擎地板 12h）
+	attack_delay = 48
+	# 战伤回补：伤亡人力回收 40%（净人员损失 ≈ 战斗内损失 ×0.6）
+	casualty_trickleback = 40
+
+	# ===== 隐藏科技 / 仅玩家 =====
+	# flag 永不设置 → 该科技不可能被正常研究；只能由事件效果 AdvanceResearch 授予。
+	allow = { has_country_flag = impossible_modern_artillery }
+	max_level = 1
+	change = no
+	difficulty = 1
+	start_year = 1936
+	stealable = no
+}
